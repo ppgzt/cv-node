@@ -1,8 +1,12 @@
-from app.services.media_capture_proxy import MediaCaptureProxy
+from app.domain.providers.media_provider import MediaProvider
+
 from flask import Flask, request
+from flask_cors import CORS
 
 app = Flask(__name__)
-orc = MediaCaptureProxy()
+CORS(app)
+
+orc = MediaProvider()
 
 @app.route("/capture", methods=['POST'])
 def capture():
@@ -10,7 +14,7 @@ def capture():
     action = params['action']
 
     if action == "start":
-        orc.start()
+        orc.start(params['thing'])
         return "Capturing media at 60FPS"
     else:
         orc.stop()
