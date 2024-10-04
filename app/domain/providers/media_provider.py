@@ -4,6 +4,7 @@ import cv2
 from datetime import datetime
 
 from app.data.sensors.camera.cameras import MaixSenseA075V 
+from app.domain.failures.exceptions import MediaSensorInitializationException
 
 class MediaProvider:
 
@@ -14,15 +15,25 @@ class MediaProvider:
         def handling():
             while True:
                 if self.event.is_set():
-                    now_in_milli = datetime.now().timestamp() * 1000
+                    try:                    
+                        now_in_milli = datetime.now().timestamp() * 1000
+                        
+                        thing_id = self.thing["id"]
+                        print(f'capturing: thing-id - {thing_id}')
+                        
+                        frames = self.sensor.take_snapshot()
+                        for img in frames:
+                            # TEMP: Acredito que a imagem deva ser persistida sem ColorMap
+                            _data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
+                            cv2.imwrite(f'output/{thing_id}_{now_in_milli}_{img.type}.jpg', _data)
                     
-                    thing_id = self.thing["id"]
-                    print(f'capturing: thing-id - {thing_id}')
+                    except MediaSensorInitializationException as err:
+                        print(err.msg)
                     
-                    frame = self.sensor.get_frame()
-                    cv2.imwrite(f'output/{thing_id}_{now_in_milli}.png', frame)
+                    except Exception as err:
+                        print(f'Unexpected {err=}, {type(err)=}')
                     
-                    time.sleep(5)
+                    time.sleep(1)
                 else:
                     print(f'waiting')
                     self.event.wait()

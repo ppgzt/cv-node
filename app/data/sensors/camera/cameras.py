@@ -3,42 +3,129 @@ import numpy as np
 import cv2
 import requests
 
-class CameraSensor:
+from app.domain.failures.exceptions import MediaSensorInitializationException
+from app.domain.entities.media import *
 
-    # return a map<ImageType, data>
-    def get_frame(self):
+class MediaSensor:
+
+    def take_snapshot(self):
+        '''
+            @return images, list
+        '''
         pass
 
-class MaixSenseA075V(CameraSensor):
+class MaixSenseA075V(MediaSensor):
 
     def __init__(self):
         self.HOST = '192.168.233.1'
         self.PORT = 80
+        self.ready = False
 
-    def __frame_config_decode(self, frame_config):
+    def take_snapshot(self):
+        if not self.ready:
+            self.__post_encode_config(self.__frame_config_encode(rgb_res=1))
+            self.ready = True
+
+        raw = self.__get_frame_from_http()
+        
+        decode_config = self.__frame_config_decode(raw[16:16+12])
+        frame_bytes   = self.__frame_payload_decode(raw[16+12:], decode_config)
+
+        rgb_data = np.frombuffer(frame_bytes[3], 'uint8').reshape(
+            (480, 640, 3) if decode_config[6] == 1 else (600, 800, 3)) if frame_bytes[3] else None
+        rgb = Image(
+            image_pov=ImagePOV.SIDEWAY, 
+            image_type=ImageType.RGB, 
+            image_res=ImageRes._640_480_3, 
+            data=rgb_data
+        )
+
+        depth_data = np.frombuffer(
+            buffer=frame_bytes[0], 
+            dtype='uint16' if 0 == decode_config[1] else 'uint8'
+        ).reshape(240, 320) if frame_bytes[0] else None
+        depth = Image(
+            image_pov=ImagePOV.SIDEWAY, 
+            image_type=ImageType.DEPTH, 
+            image_res=ImageRes._320_240_1, 
+            data=depth_data
+        )
+
+        ir_data = np.frombuffer(
+            buffer=frame_bytes[1], 
+            dtype='uint16' if 0 == decode_config[3] else 'uint8'
+        ).reshape(240, 320) if frame_bytes[1] else None
+        ir = Image(
+            image_pov=ImagePOV.SIDEWAY, 
+            image_type=ImageType.IR, 
+            image_res=ImageRes._320_240_1, 
+            data=ir_data
+        )
+
+        status_data = np.frombuffer(
+            buffer=frame_bytes[2], 
+            dtype='uint16' if 0 == decode_config[4] else 'uint8'
+        ).reshape(240, 320) if frame_bytes[2] else None
+        status = Image(
+            image_pov=ImagePOV.SIDEWAY, 
+            image_type=ImageType.STATUS, 
+            image_res=ImageRes._320_240_1, 
+            data=status_data
+        )
+
+        return [rgb, depth, ir, status]
+
+    def __frame_config_encode(
+            self, 
+            trigger_mode=1, 
+            deep_mode=1, 
+            deep_shift=255, 
+            ir_mode=1, 
+            status_mode=2, 
+            status_mask=7, 
+            rgb_mode=1, 
+            rgb_res=0, 
+            expose_time=0):
         '''
-            @frame_config bytes
-
-            @return fields, tuple (trigger_mode, deep_mode, deep_shift, ir_mode, status_mode, status_mask, rgb_mode, rgb_res, expose_time)
-        '''
-        return struct.unpack("<BBBBBBBBi", frame_config)
-
-
-    def __frame_config_encode(self, trigger_mode=1, deep_mode=1, deep_shift=255, ir_mode=1, status_mode=2, status_mask=7, rgb_mode=1, rgb_res=0, expose_time=0):
-        '''
-            @trigger_mode, deep_mode, deep_shift, ir_mode, status_mode, status_mask, rgb_mode, rgb_res, expose_time
-
             @return frame_config bytes
         '''
         return struct.pack("<BBBBBBBBi",
                         trigger_mode, deep_mode, deep_shift, ir_mode, status_mode, status_mask, rgb_mode, rgb_res, expose_time)
 
+    def __frame_config_decode(self, frame_config):
+        '''
+            @frame_config bytes
+
+            @return fields, tuple (
+                trigger_mode, 
+                deep_mode, 
+                deep_shift, 
+                ir_mode, 
+                status_mode, 
+                status_mask, 
+                rgb_mode, 
+                rgb_res, 
+                expose_time
+            )
+        '''
+        return struct.unpack("<BBBBBBBBi", frame_config)
+    
 
     def __frame_payload_decode(self, frame_data: bytes, with_config: tuple):
         '''
             @frame_data, bytes
 
-            @with_config, tuple (trigger_mode, deep_mode, deep_shift, ir_mode, status_mode, status_mask, rgb_mode, rgb_res, expose_time)
+            @with_config, tuple (
+                trigger_mode, 
+                deep_mode, 
+                deep_shift, 
+                ir_mode, 
+                status_mode, 
+                status_mask, 
+                rgb_mode, 
+                rgb_res, 
+                expose_time
+            )
 
             @return imgs, tuple (deepth_img, ir_img, status_img, rgb_img)
         '''
@@ -74,8 +161,8 @@ class MaixSenseA075V(CameraSensor):
                 jpeg = cv2.imdecode(np.frombuffer(
                     rgb_img, 'uint8', rgb_size), cv2.IMREAD_COLOR)
                 if not jpeg is None:
-                    rgb = cv2.cvtColor(jpeg, cv2.COLOR_BGR2RGB)
-                    rgb_img = rgb.tobytes()
+                    # rgb = cv2.cvtColor(jpeg, cv2.COLOR_BGR2RGB)
+                    rgb_img = jpeg.tobytes()
                 else:
                     rgb_img = None
             # elif 0 == with_config[6]:
@@ -88,51 +175,36 @@ class MaixSenseA075V(CameraSensor):
             #         rgb_img = None
 
         return (deepth_img, ir_img, status_img, rgb_img)
+    
+    '''
+        @config, tuple (
+            trigger_mode, 
+            deep_mode, 
+            deep_shift, 
+            ir_mode, 
+            status_mode, 
+            status_mask, 
+            rgb_mode, 
+            rgb_res, 
+            expose_time
+        )
 
+        @return void
+    '''
     def __post_encode_config(self, config):
-        r = requests.post('http://{}:{}/set_cfg'.format(self.HOST, self.PORT), config)
-        if(r.status_code == requests.codes.ok):
-            return True
-        return False
-
-    def __post_CameraParmsBytes(self, cameraParms:bytes):
-        r = requests.post('http://{}:{}/calibration'.format(self.HOST, self.PORT), cameraParms)
-        if(r.status_code == requests.codes.ok):
-            print("ok")
-
-    def __show_frame(self, frame_data: bytes):
-        config = self.__frame_config_decode(frame_data[16:16+12])
-        frame_bytes = self.__frame_payload_decode(frame_data[16+12:], config)
-
-        depth = np.frombuffer(frame_bytes[0], 'uint16' if 0 == config[1] else 'uint8').reshape(
-            240, 320) if frame_bytes[0] else None
-
-        ir = np.frombuffer(frame_bytes[1], 'uint16' if 0 == config[3] else 'uint8').reshape(
-            240, 320) if frame_bytes[1] else None
-
-        status = np.frombuffer(frame_bytes[2], 'uint16' if 0 == config[4] else 'uint8').reshape(
-            240, 320) if frame_bytes[2] else None
-
-        rgb = np.frombuffer(frame_bytes[3], 'uint8').reshape(
-            (480, 640, 3) if config[6] == 1 else (600, 800, 3)) if frame_bytes[3] else None
-
-        figsize = (12, 12)
-        # fig = plt.figure(figsize=figsize)
-
-        # ax1 = fig.add_subplot(221)
-        # if not depth is None:
-        #     ax1.imshow(depth)
-        #     # np.save("fg1.npy", depth)
-        #     # np.savetxt("depth.csv", (depth/4).astype('uint16'), delimiter="," )
-        # ax2 = fig.add_subplot(222)
-        # if not ir is None:
-        #     ax2.imshow(ir)
-        # ax3 = fig.add_subplot(223)
-        # if not status is None:
-        #     ax3.imshow(status)
-        # ax4 = fig.add_subplot(224)
-        # if not rgb is None:
-        #     ax4.imshow(rgb)        
+        try:
+            timeout = 5
+            r = requests.post(
+                url='http://{}:{}/set_cfg'.format(self.HOST, self.PORT), 
+                data=config,
+                timeout=timeout
+            )
+            if(r.status_code != requests.codes.ok):
+                raise MediaSensorInitializationException(msg=f'Error: status_code={r.status_code}')            
+        except requests.exceptions.Timeout as err:
+            raise MediaSensorInitializationException(msg=f'Err: {err}; Timeout: {timeout}')
+        except Exception as err:
+            raise MediaSensorInitializationException()
 
     def __get_frame_from_http(self):
         r = requests.get('http://{}:{}/getdeep'.format(self.HOST, self.PORT))
@@ -143,17 +215,3 @@ class MaixSenseA075V(CameraSensor):
             (frameid, stamp_msec) = struct.unpack('<QQ', deepimg[0:8+8])
             print((frameid, stamp_msec/1000))
             return deepimg
-        
-    def get_frame(self):
-        if self.__post_encode_config(self.__frame_config_encode(1,0,255,0,2,7,1,0,0)):
-            raw = self.__get_frame_from_http()
-            
-            config = self.__frame_config_decode(raw[16:16+12])
-            frame_bytes = self.__frame_payload_decode(raw[16+12:], config)
-
-            rgb = np.frombuffer(frame_bytes[3], 'uint8').reshape(
-                (480, 640, 3) if config[6] == 1 else (600, 800, 3)) if frame_bytes[3] else None
-            
-            return rgb
-
-        return None
