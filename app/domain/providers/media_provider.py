@@ -9,19 +9,26 @@ from app.domain.failures.exceptions import MediaSensorInitializationException
 class MediaProvider:
 
     def __init__(self):
-        self.sensor = None
+        self.sensors = [
+            lambda: PiCamera(), lambda: MaixSenseA075V()
+        ]
 
         # img acquisition
-        def handling():
+        def handling(thread_name: str, factory):
+            sensor = None
+            
             while True:
                 if self.event.is_set():
-                    try:                    
+                    try:               
+                        if sensor is None:
+                            sensor = factory()
+     
                         now_in_milli = datetime.now().timestamp() * 1000
                         
                         thing_id = self.thing["id"]
-                        print(f'capturing: thing-id - {thing_id}')
+                        print(f'{thread_name} is capturing: thing-id - {thing_id}')
                         
-                        frames = self.sensor.take_snapshot()
+                        frames = sensor.take_snapshot()
                         for img in frames:
                             # TEMP: Acredito que a imagem deva ser persistida sem ColorMap
                             #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
@@ -29,10 +36,10 @@ class MediaProvider:
                             print('saved')
                     
                     except MediaSensorInitializationException as err:
-                        print(err.msg)
+                        print(f'{thread_name} - {err.msg}')
                     
                     except Exception as err:
-                        print(f'Unexpected {err=}, {type(err)=}')
+                        print(f'{thread_name} - Unexpected {err=}, {type(err)=}')
                     
                     time.sleep(1)
                 else:
@@ -41,16 +48,19 @@ class MediaProvider:
         
         self.event = threading.Event()
         self.thing = None
-        
-        t_capt = threading.Thread(target = handling)        
-        t_capt.start()
+
+        self.threads = []
+        i = 0
+        for sensor in self.sensors:
+            t = threading.Thread(target = handling, args=(f'Thread: {i}', sensor,))
+            self.threads.append(t)
+            
+            t.start()
+            i = i+1
 
         print('orchestration on')
 
     def start(self, thing):
-        if self.sensor is None:
-            self.sensor = MaixSenseA075V()
-
         print('step: start')
         self.thing = thing
         self.event.set()
