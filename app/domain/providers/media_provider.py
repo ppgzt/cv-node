@@ -3,13 +3,13 @@ import time
 import cv2
 from datetime import datetime
 
-from app.data.sensors.camera.cameras import MaixSenseA075V 
+from app.data.sensors.camera.cameras import *
 from app.domain.failures.exceptions import MediaSensorInitializationException
 
 class MediaProvider:
 
     def __init__(self):
-        self.sensor = MaixSenseA075V()
+        self.sensor = None
 
         # img acquisition
         def handling():
@@ -24,8 +24,9 @@ class MediaProvider:
                         frames = self.sensor.take_snapshot()
                         for img in frames:
                             # TEMP: Acredito que a imagem deva ser persistida sem ColorMap
-                            _data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
-                            cv2.imwrite(f'output/{thing_id}_{now_in_milli}_{img.type}.jpg', _data)
+                            #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
+                            cv2.imwrite(f'output/{thing_id}_{now_in_milli}_{img.type}.jpg', img.data)
+                            print('saved')
                     
                     except MediaSensorInitializationException as err:
                         print(err.msg)
@@ -47,6 +48,9 @@ class MediaProvider:
         print('orchestration on')
 
     def start(self, thing):
+        if self.sensor is None:
+            self.sensor = MaixSenseA075V()
+
         print('step: start')
         self.thing = thing
         self.event.set()
