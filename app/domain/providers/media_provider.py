@@ -33,15 +33,14 @@ class MediaProvider:
 
                         if sensor is None:
                             sensor = factory()
-     
-                        now_in_milli = datetime.now().microsecond                        
-                        
+                             
+                        timestamp = datetime.now().microsecond                        
                         frames = sensor.take_snapshot()
                         for img in frames:
                             # TEMP: Acredito que a imagem deva ser persistida sem ColorMap
                             #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
                             
-                            file_path = f'output/{thing_id}_{now_in_milli}_{img.type.name}.jpg'
+                            file_path = f'output/{thing_id}_{timestamp}_{img.type.name}.jpg'
                             cv2.imwrite(file_path, img.data)
 
                             self.datasource.insert_item(item=RunItem(

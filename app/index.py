@@ -6,7 +6,7 @@ from app.domain.providers.agent_manager  import AgentManager
 from app.domain.entities.basic import *
 from app.data.datasource.datasource import Datasource
 
-from flask import Flask, request
+from flask import Flask, request, render_template
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -24,7 +24,7 @@ media_provider = MediaProvider()
 def capture():
     params = request.get_json()
     action = params['action']
-        
+
     if action == "start":
         job_id = Datasource().insert_job(job=Job())
 
@@ -33,3 +33,7 @@ def capture():
     else:
         media_provider.stop()
         return "Capture stoped"
+
+@app.route("/docs", methods=['GET'])
+def docs():
+    return render_template("docs.html", items=Datasource().list_items())
