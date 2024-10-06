@@ -10,6 +10,7 @@ requests = "*"
 opencv-python = "*"
 flask-cors = "*"
 psutil = "*"
+tinydb = "*"
 
 [dev-packages]
 

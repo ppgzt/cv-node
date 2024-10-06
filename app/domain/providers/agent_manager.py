@@ -36,4 +36,6 @@ class AgentManager:
             t.start()
 
         print('Agent monitor on')
+        
+    def run(self):    
         self.event.set()
