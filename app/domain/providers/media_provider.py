@@ -24,11 +24,12 @@ class MediaProvider:
             
             while True:
                 if self.event.is_set():
+                    print(f'{thread_name} is capturing ...')
                     try:
-                        print(f'{thread_name} is capturing ...')
-
                         thing_id = self.thing["id"]
-                        run_id = self.datasource.insert_run(run=Run(thing_id=thing_id))                        
+
+                        run = Run(thing_id=thing_id)
+                        run_id = self.datasource.insert_run(run=run)                        
 
                         if sensor is None:
                             sensor = factory()
@@ -49,6 +50,9 @@ class MediaProvider:
                                 type=RunItemType.IMAGE,
                                 data={'file_path':file_path}
                             ))
+
+                            run.final_at = datetime.now()
+                            self.datasource.update_run(run_id=run_id, run=run)
                             
                         print(f'{thread_name} done!')
                     
@@ -87,3 +91,4 @@ class MediaProvider:
 
         self.obj = None
         self.event.clear()
+        print(self.datasource.list_runs())

@@ -15,17 +15,29 @@ class Datasource(object):
             cls.instance = super(Datasource, cls).__new__(cls)
         return cls.instance
     
+    # Insert
+    
     def insert_job(self, job: Job) -> int:
         return self.db.table(self.__job_table).insert(job.to_dict())
 
     def insert_run(self, run: Run) -> int:
         return self.db.table(self.__run_table).insert(run.to_dict())
-    
+
+    def update_run(self, run_id: int, run: Run):
+        self.db.table(self.__run_table).update(
+            run.to_dict(), doc_ids=[run_id]
+        )
+
     def insert_item(self, item: RunItem) -> int:
         return self.db.table(self.__itm_table).insert(item.to_dict())
 
+    # List
+
     def list_jobs(self):
         return self.db.table(self.__job_table).all()
-    
+
+    def list_runs(self):
+        return self.db.table(self.__run_table).all()
+
     def list_items(self):
         return self.db.table(self.__itm_table).all()

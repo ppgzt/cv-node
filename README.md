@@ -19,3 +19,7 @@ I configured a _Fine-grained personal access tokens_ for user _ewertonsjp_ on gi
 ```bash
 git config --global credential.helper store
 ```
+
+### DB
+
+https://tinydb.readthedocs.io/en/latest/
