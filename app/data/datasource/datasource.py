@@ -4,7 +4,7 @@ from app.domain.entities.basic import *
 class Datasource(object):
 
     def __init__(self):
-        self.db = TinyDB("db/cvnode.json")
+        self.db = TinyDB("cv-node-data/db/cvnode.json")
         
         self.__job_table = 'jobs'
         self.__run_table = 'runs'

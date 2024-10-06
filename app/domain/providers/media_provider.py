@@ -40,7 +40,7 @@ class MediaProvider:
                             #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
                             
                             file_path = f'{thing_id}_{timestamp}_{img.type.name}.jpg'
-                            cv2.imwrite(f'output/{file_path}', img.data)
+                            cv2.imwrite(f'cv-node-data/output/{file_path}', img.data)
 
                             self.datasource.insert_item(item=RunItem(
                                 run_id=run_id,
