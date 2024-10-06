@@ -14,8 +14,7 @@ class MediaProvider:
         self.datasource = Datasource()
 
         self.sensors = [
-            lambda: MockCam()
-            # lambda: PiCamera(), lambda: MaixSenseA075V()
+            lambda: MockCam(), lambda: PiCamera(), lambda: MaixSenseA075V()
         ]
 
         # img acquisition
@@ -40,12 +39,12 @@ class MediaProvider:
                             # TEMP: Acredito que a imagem deva ser persistida sem ColorMap
                             #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
                             
-                            file_path = f'output/{thing_id}_{timestamp}_{img.type.name}.jpg'
-                            cv2.imwrite(file_path, img.data)
+                            file_path = f'{thing_id}_{timestamp}_{img.type.name}.jpg'
+                            cv2.imwrite(f'output/{file_path}', img.data)
 
                             self.datasource.insert_item(item=RunItem(
                                 run_id=run_id,
-                                sensor=f'{type(sensor)}',
+                                sensor=thread_name,
                                 type=RunItemType.IMAGE,
                                 data={'file_path':file_path}
                             ))
