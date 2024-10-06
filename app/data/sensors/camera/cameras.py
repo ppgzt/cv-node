@@ -232,3 +232,18 @@ class MaixSenseA075V(MediaSensor):
             (frameid, stamp_msec) = struct.unpack('<QQ', deepimg[0:8+8])
             print((frameid, stamp_msec/1000))
             return deepimg
+        
+class MockCam(MediaSensor):
+
+    def take_snapshot(self):
+        '''
+            @return images, list
+        '''
+        return [
+            Image(
+                image_pov=ImagePOV.SIDEWAY, 
+                image_type=ImageType.RGB,
+                image_res=ImageRes._320_240_1, 
+                data=np.random.randint(0, 256, size=(100, 100, 3), dtype=np.uint8)
+            )            
+        ]
