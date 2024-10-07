@@ -33,7 +33,7 @@ class MediaProvider:
                         if sensor is None:
                             sensor = factory()
                              
-                        timestamp = datetime.now().microsecond                        
+                        timestamp = datetime.now().microsecond
                         frames = sensor.take_snapshot()
                         for img in frames:
                             # TEMP: Acredito que a imagem deva ser persistida sem ColorMap

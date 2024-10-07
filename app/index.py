@@ -1,4 +1,6 @@
-import threading
+import threading, os
+
+from datetime import datetime
 
 from app.domain.providers.media_provider import MediaProvider
 from app.domain.providers.agent_manager  import AgentManager
@@ -37,3 +39,9 @@ def capture():
 @app.route("/docs", methods=['GET'])
 def docs():
     return render_template("docs.html", items=Datasource().list_items())
+
+@app.route("/reset", methods=['GET'])
+def reset():
+    now = datetime.now()
+    os.rename("cv-node-data/db/cvnode.json", f"cv-node-data/db/cvnode_{now.microsecond}.json")
+    return 'OK'
