@@ -89,4 +89,3 @@ class MediaProvider:
 
         self.obj = None
         self.event.clear()
-        print(self.datasource.list_runs())
