@@ -1,4 +1,4 @@
-import threading, time, cv2
+import threading, cv2, json
 
 from datetime import datetime
 
@@ -12,6 +12,7 @@ from app.domain.entities.helpers import ClockWatch
 class MediaProvider():
 
     def __init__(self):
+        self.durations = []
 
         self.factories = [
             lambda: MockCam(), # lambda: PiCamera(), lambda: MaixSenseA075V()
@@ -24,7 +25,7 @@ class MediaProvider():
             sensor = None
             
             while True:
-                clock_watch = ClockWatch()
+                clock_watch = ClockWatch(key=thread_name)
                 
                 if self.event.is_set():
                     print(f'{thread_name} is capturing ...')
@@ -64,6 +65,7 @@ class MediaProvider():
                         ds.update_run(run_id=run_id, run=run)
                             
                         print(f'{thread_name} done! durations: {clock_watch.cron}')
+                        self.durations.append(clock_watch.cron)
                     
                     except MediaSensorInitializationException as err:
                         print(f'{thread_name} - {err.msg}')
@@ -93,6 +95,8 @@ class MediaProvider():
 
     def start(self, thing: dict, job_id: int):
         print(f'MediaProvider | starting job: {job_id}')
+        self.durations = []
+
         self.thing = thing
         self.event.set()
         
@@ -101,3 +105,12 @@ class MediaProvider():
 
         self.obj = None
         self.event.clear()
+
+        with open('watch/durations.json', 'w') as f:
+            file_data = []
+            for dur in self.durations:
+                data = {}
+                for tp in dur:
+                    data[tp[0]] = tp[1]
+                file_data.append(data)    
+            json.dump(file_data, f)
