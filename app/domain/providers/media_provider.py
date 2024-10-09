@@ -11,14 +11,15 @@ from app.data.datasource.datasource import Datasource
 class MediaProvider:
 
     def __init__(self):
-        self.datasource = Datasource()
 
-        self.sensors = [
-            lambda: MockCam(), lambda: PiCamera(), lambda: MaixSenseA075V()
+        self.factories = [
+            lambda: MockCam(), 
+            # lambda: PiCamera(), lambda: MaixSenseA075V()
         ]
 
         # img acquisition
-        def handling(thread_name: str, factory):
+        def handling(thread_name: str, job_id: int, sensor_factory):
+            datasource = Datasource()
             sensor = None
             
             while True:
@@ -27,30 +28,30 @@ class MediaProvider:
                     try:
                         thing_id = self.thing["id"]
 
-                        run = Run(thing_id=thing_id)
-                        run_id = self.datasource.insert_run(run=run)                        
+                        run = Run(job_id=job_id, thing_id=thing_id, begin_at=datetime.now())
+                        run_id = datasource.insert_run(run=run)
 
                         if sensor is None:
-                            sensor = factory()
+                            sensor = sensor_factory()
                              
-                        timestamp = datetime.now().microsecond
+                        timestamp = int(datetime.now().timestamp())
                         frames = sensor.take_snapshot()
                         for img in frames:
                             # TEMP: Acredito que a imagem deva ser persistida sem ColorMap
                             #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
                             
-                            file_path = f'{thing_id}_{timestamp}_{img.type.name}.jpg'
+                            file_path = f'{run_id}_{thing_id}_{timestamp}_{img.type.name}.jpg'
                             cv2.imwrite(f'cv-node-data/output/{file_path}', img.data)
 
-                            self.datasource.insert_item(item=RunItem(
-                                run_id=run_id,
-                                sensor=thread_name,
-                                type=RunItemType.IMAGE,
-                                data={'file_path':file_path}
-                            ))
+                            # self.datasource.insert_item(item=RunItem(
+                            #     run_id=run_id,
+                            #     sensor=thread_name,
+                            #     type=RunItemType.IMAGE,
+                            #     data={'file_path':file_path}
+                            # ))
 
-                            run.final_at = datetime.now()
-                            self.datasource.update_run(run_id=run_id, run=run)
+                        # run.final_at = datetime.now()
+                        # self.datasource.update_run(run_id=run_id, run=run)
                             
                         print(f'{thread_name} done!')
                     
@@ -60,7 +61,7 @@ class MediaProvider:
                     except Exception as err:
                         print(f'{thread_name} - Unexpected {err=}, {type(err)=}')
                     
-                    time.sleep(1)
+                    # time.sleep(1)
                 else:
                     print(f'waiting')
                     self.event.wait()
@@ -70,8 +71,10 @@ class MediaProvider:
 
         self.threads = []
         i = 0
-        for sensor in self.sensors:
-            t = threading.Thread(target = handling, args=(f'Thread: {i}', sensor,))
+        for sensor_factory in self.factories:
+            # FIXME: set job_id
+
+            t = threading.Thread(target = handling, args=(f'Thread: {i}', 0, sensor_factory,))
             self.threads.append(t)
             
             t.start()

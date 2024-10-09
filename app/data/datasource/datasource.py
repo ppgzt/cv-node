@@ -1,49 +1,66 @@
-from tinydb import TinyDB, Query
-from app.domain.entities.basic import *
+import sqlite3
 
-from threading import Lock
+from app.domain.entities.basic import *
 
 class Datasource(object):
 
     def __init__(self):
-        self.db = TinyDB("cv-node-data/db/cvnode.json")
+        self.con = sqlite3.connect("cv-node-data/db/cvnode.db")
         
         self.__job_table = 'jobs'
         self.__run_table = 'runs'
         self.__itm_table = 'itens'
 
-        self.__lock = Lock()
+        # FIXME ~ Where to create Tables? 
 
-    def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(Datasource, cls).__new__(cls)
-        return cls.instance
+        cur = self.__get_cursor()
+        
+        cur.execute(f'CREATE TABLE IF NOT EXISTS {self.__job_table} (id ROWID, begin_at, final_at)')
+        cur.execute(f'CREATE TABLE IF NOT EXISTS {self.__run_table} (id ROWID, begin_at, final_at, thing_id, job_id)')
+        cur.execute(f'CREATE TABLE IF NOT EXISTS {self.__itm_table} (id ROWID, status, sensor, type, data, run_id)')
+        
+        self.__commit
     
-    def __commit(self, f):
-        with self.__lock:
-            return f()
+    def __get_cursor(self):
+        return self.con.cursor()
     
-    # Insert
+    def __commit(self):
+        self.con.commit() 
+    
+    # Insert | Update
     
     def insert_job(self, job: Job) -> int:
-        return self.__commit(
-            lambda: self.db.table(self.__job_table).insert(job.to_dict())
-        )
+        res = self.__get_cursor().execute(
+            f"INSERT INTO {self.__job_table} VALUES(null, ?, ?)", job.to_tuple()
+        )                
+        self.__commit()
+        return res.lastrowid
 
     def insert_run(self, run: Run) -> int:
-        return self.__commit(
-            lambda: self.db.table(self.__run_table).insert(run.to_dict()) 
-        )
+        res = self.__get_cursor().execute(
+            f"INSERT INTO {self.__run_table} VALUES(null, ?, ?, ?, ?)", run.to_tuple()
+        )                
+        self.__commit()
+        return res.lastrowid
 
-    def update_run(self, run_id: int, run: Run):
-        self.__commit(
-            self.db.table(self.__run_table).update(run.to_dict(), doc_ids=[run_id])
-        )
+    def update_run(self, run_id: int, run: Run) -> None:
+        values = list(run.to_tuple())
+        values.insert(0, run_id)
+
+        self.__get_cursor().execute(
+            f"""UPDATE {self.__run_table} 
+                SET begin_at = ?, final_at = ?, thing_id = ?, job_id = ?) 
+                WHERE run_id = ?
+            """, tuple(values)
+        )                
+        self.__commit()
 
     def insert_item(self, item: RunItem) -> int:
-        return self.__commit(
-            self.db.table(self.__itm_table).insert(item.to_dict())
-        )
+        res = self.__get_cursor().execute(
+            f"INSERT INTO {self.__itm_table} VALUES(null, ?, ?, ?, ?, ?)", item.to_tuple()
+        )                
+        self.__commit()
+        return res.lastrowid       
 
     # List
 

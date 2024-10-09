@@ -28,7 +28,7 @@ def capture():
     action = params['action']
 
     if action == "start":
-        job_id = Datasource().insert_job(job=Job())
+        job_id = Datasource().insert_job(job=Job(begin_at=datetime.now()))
 
         media_provider.start(thing=params['thing'], job_id=job_id)
         return "Capturing media at 60FPS"
