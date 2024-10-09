@@ -13,8 +13,7 @@ class MediaProvider:
     def __init__(self):
 
         self.factories = [
-            lambda: MockCam(), 
-            # lambda: PiCamera(), lambda: MaixSenseA075V()
+            lambda: MockCam(), # lambda: PiCamera(), lambda: MaixSenseA075V()
         ]
 
         # img acquisition
@@ -43,15 +42,18 @@ class MediaProvider:
                             file_path = f'{run_id}_{thing_id}_{timestamp}_{img.type.name}.jpg'
                             cv2.imwrite(f'cv-node-data/output/{file_path}', img.data)
 
-                            # self.datasource.insert_item(item=RunItem(
-                            #     run_id=run_id,
-                            #     sensor=thread_name,
-                            #     type=RunItemType.IMAGE,
-                            #     data={'file_path':file_path}
-                            # ))
+                            item_id = datasource.insert_item(item=RunItem(
+                                status=RunItemStatus.STAGED,
+                                sensor=thread_name,
+                                type=RunItemType.IMAGE,
+                                file_path=file_path,
+                                run_id=run_id,
+                            ))
+                            print(f'Item {item_id} inserted')
 
-                        # run.final_at = datetime.now()
-                        # self.datasource.update_run(run_id=run_id, run=run)
+                        run.final_at = datetime.now()
+                        datasource.update_run(run_id=run_id, run=run)
+                        print(f'Run {run_id} updated')
                             
                         print(f'{thread_name} done!')
                     
@@ -61,7 +63,6 @@ class MediaProvider:
                     except Exception as err:
                         print(f'{thread_name} - Unexpected {err=}, {type(err)=}')
                     
-                    # time.sleep(1)
                 else:
                     print(f'waiting')
                     self.event.wait()

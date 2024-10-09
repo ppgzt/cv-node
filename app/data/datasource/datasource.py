@@ -49,8 +49,8 @@ class Datasource(object):
 
         self.__get_cursor().execute(
             f"""UPDATE {self.__run_table} 
-                SET begin_at = ?, final_at = ?, thing_id = ?, job_id = ?) 
-                WHERE run_id = ?
+                SET begin_at = ?, final_at = ?, thing_id = ?, job_id = ? 
+                WHERE id = ?
             """, tuple(values)
         )                
         self.__commit()

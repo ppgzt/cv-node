@@ -50,18 +50,22 @@ class RunItemStatus(Enum):
 
 class RunItem:
 
-    def __init__(self, run_id: int, sensor: str, type: RunItemType, data: dict):
-        self.status = RunItemStatus.STAGED
-        self.run_id = run_id
+    def __init__(self, status: RunItemStatus, sensor: str, type: RunItemType, file_path: dict, run_id: int):
+        self.status = status
         self.sensor = sensor
         self.type   = type
-        self.data   = data
+        self.file_path   = file_path
+        self.run_id = run_id
 
     def to_dict(self):
         return {
             'status': self.status.name,
-            'run_id': self.run_id,
             'sensor': self.sensor,
             'type': self.type.name,
-            'data': self.data
+            'data': self.file_path,
+            'run_id': self.run_id,
         }
+    
+
+    def to_tuple(self):
+        return (self.status.name, self.sensor, self.type.name, self.file_path, self.run_id)
