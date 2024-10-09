@@ -7,8 +7,9 @@ from app.domain.entities.basic import *
 
 from app.domain.failures.exceptions import MediaSensorInitializationException
 from app.data.datasource.datasource import Datasource
+from app.domain.entities.helpers import ClockWatch
 
-class MediaProvider:
+class MediaProvider():
 
     def __init__(self):
 
@@ -18,44 +19,51 @@ class MediaProvider:
 
         # img acquisition
         def handling(thread_name: str, job_id: int, sensor_factory):
-            datasource = Datasource()
+            
+            ds = Datasource()
             sensor = None
             
             while True:
+                clock_watch = ClockWatch()
+                
                 if self.event.is_set():
                     print(f'{thread_name} is capturing ...')
                     try:
                         thing_id = self.thing["id"]
 
                         run = Run(job_id=job_id, thing_id=thing_id, begin_at=datetime.now())
-                        run_id = datasource.insert_run(run=run)
+                        run_id = ds.insert_run(run=run)
 
                         if sensor is None:
                             sensor = sensor_factory()
                              
                         timestamp = int(datetime.now().timestamp())
-                        frames = sensor.take_snapshot()
+                        
+                        
+                        frames = clock_watch.watch(
+                            step_name='0-capture', method=lambda: sensor.take_snapshot())
                         for img in frames:
-                            # TEMP: Acredito que a imagem deva ser persistida sem ColorMap
-                            #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)
+                            # TODO: Acredito que a imagem deva ser persistida sem ColorMap
+                            #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)                            
                             
                             file_path = f'{run_id}_{thing_id}_{timestamp}_{img.type.name}.jpg'
-                            cv2.imwrite(f'cv-node-data/output/{file_path}', img.data)
+                            clock_watch.watch(
+                                step_name='1-store_img', 
+                                method= lambda: cv2.imwrite(f'cv-node-data/output/{file_path}', img.data)
+                            )
 
-                            item_id = datasource.insert_item(item=RunItem(
-                                status=RunItemStatus.STAGED,
-                                sensor=thread_name,
-                                type=RunItemType.IMAGE,
-                                file_path=file_path,
-                                run_id=run_id,
-                            ))
+                            item = RunItem(
+                                status=RunItemStatus.STAGED, sensor=thread_name, type=RunItemType.IMAGE,file_path=file_path, run_id=run_id,
+                            )
+
+                            item_id = clock_watch.watch(
+                                step_name='2-store_db', method=lambda: ds.insert_item(item=item))
                             print(f'Item {item_id} inserted')
 
                         run.final_at = datetime.now()
-                        datasource.update_run(run_id=run_id, run=run)
-                        print(f'Run {run_id} updated')
+                        ds.update_run(run_id=run_id, run=run)
                             
-                        print(f'{thread_name} done!')
+                        print(f'{thread_name} done! durations: {clock_watch.cron}')
                     
                     except MediaSensorInitializationException as err:
                         print(f'{thread_name} - {err.msg}')
