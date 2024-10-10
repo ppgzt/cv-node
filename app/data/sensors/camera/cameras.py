@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import requests
 
-# from picamzero import Camera
+from picamzero import Camera
 
 from app.domain.failures.exceptions import MediaSensorInitializationException
 from app.domain.entities.media import *
@@ -19,7 +19,7 @@ class MediaSensor:
 class PiCamera(MediaSensor):
 
     def __init__(self):
-        self.cam = None
+        self.cam = Camera()
         self.cam.still_size = (1920, 1080)
 
     def take_snapshot(self):
