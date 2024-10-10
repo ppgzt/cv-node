@@ -15,7 +15,9 @@ class MediaProvider():
         self.durations = []
 
         self.factories = [
-            lambda: MockCam(), # lambda: PiCamera(), lambda: MaixSenseA075V()
+            # lambda: MockCam(), 
+            lambda: PiCamera(), 
+            # lambda: MaixSenseA075V()
         ]
 
         # img acquisition

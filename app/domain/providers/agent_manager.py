@@ -7,7 +7,7 @@ class AgentManager:
     def __init__(self):
 
         self.agents = [
-            lambda: SystemMonitorAgent()
+            # lambda: SystemMonitorAgent()
         ]
 
         # run agent

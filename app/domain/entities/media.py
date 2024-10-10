@@ -8,8 +8,10 @@ class ImageType(Enum):
     STATUS = 3
 
 class ImageRes(Enum):
-    _320_240_1  = 0
-    _640_480_3  = 1
+    _320_240_1    = 0
+    _640_480_3    = 1
+    _1280_720_3   = 2
+    _1920_1080_3  = 3
 
 class ImagePOV(Enum):
     TOP_DOWN = 0
