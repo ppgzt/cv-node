@@ -1,7 +1,8 @@
 # App
 cv-node-data
-analytics/data
 watch
+analytics/data
+analytics/exps
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
