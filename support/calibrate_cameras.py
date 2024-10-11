@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import cv2, requests, struct
 import numpy as np
 
+from picamzero import Camera
+
 def frame_config_decode(frame_config):
     '''
         @frame_config bytes
@@ -93,6 +95,10 @@ def get_img_from_a075v(host=HOST, port=PORT):
 if post_encode_config(frame_config_encode(1, 1, 255, 0, 2, 7, 1, 0, 0)):
     with plt.ion():
         fig = plt.figure('2D frame', figsize=(20, 12), clear=True)
+        
+        cam = Camera()
+        cam.still_size = (1920, 1080)
+
         while True:
             depth, ir, rgb = get_img_from_a075v()
             
@@ -105,9 +111,11 @@ if post_encode_config(frame_config_encode(1, 1, 255, 0, 2, 7, 1, 0, 0)):
             ax3 = fig.add_subplot(223)
             ax3.imshow(ir)
 
-            ax4 = fig.add_subplot(224)
-            ax4.imshow(np.random.randint(0, 256, size=(1080, 1920, 3), dtype=np.uint8), cmap='gray')
+            rgb_pi = cam.capture_array()    
             
+            ax4 = fig.add_subplot(224)
+            ax4.imshow(rgb_pi)
+
             # 停顿时间
             plt.pause(0.1)
             # 清除当前画布
