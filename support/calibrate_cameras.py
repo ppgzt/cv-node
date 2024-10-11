@@ -1,10 +1,6 @@
-from PIL import Image
-import requests
 import matplotlib.pyplot as plt
-import struct
+import cv2, requests, struct
 import numpy as np
-import cv2
-
 
 def frame_config_decode(frame_config):
     '''
@@ -15,7 +11,16 @@ def frame_config_decode(frame_config):
     return struct.unpack("<BBBBBBBBi", frame_config)
 
 
-def frame_config_encode(trigger_mode=1, deep_mode=1, deep_shift=255, ir_mode=1, status_mode=2, status_mask=7, rgb_mode=1, rgb_res=0, expose_time=0):
+def frame_config_encode(
+        trigger_mode=1, 
+        deep_mode=1, 
+        deep_shift=255, 
+        ir_mode=1, 
+        status_mode=2, 
+        status_mask=7, 
+        rgb_mode=1, 
+        rgb_res=0, 
+        expose_time=0):
     return struct.pack("<BBBBBBBBi",
                        trigger_mode, deep_mode, deep_shift, ir_mode, status_mode, status_mask, rgb_mode, rgb_res, expose_time)
 
@@ -63,82 +68,47 @@ def frame_payload_decode(frame_data: bytes, with_config: tuple):
 HOST = '192.168.233.1'
 PORT = 80
 
-
 def post_encode_config(config=frame_config_encode(), host=HOST, port=PORT):
     r = requests.post('http://{}:{}/set_cfg'.format(host, port), config)
+    print(r.status_code)
     if(r.status_code == requests.codes.ok):
         return True
     return False
 
-
-def get_frame_from_http(host=HOST, port=PORT):
+def get_img_from_a075v(host=HOST, port=PORT):
     r = requests.get('http://{}:{}/getdeep'.format(host, port))
     if(r.status_code == requests.codes.ok):
-        # print('Get deep image')
         deepimg = r.content
-        # print('Length={}'.format(len(deepimg)))
         (frameid, stamp_msec) = struct.unpack('<QQ', deepimg[0:8+8])
-        # print((frameid, stamp_msec/1000))
-        return deepimg
 
+        config = frame_config_decode(deepimg[16:16+12])
+        frame_bytes = frame_payload_decode(deepimg[16+12:], config)
 
-def show_frame(fig, frame_data: bytes):
-    config = frame_config_decode(frame_data[16:16+12])
-    frame_bytes = frame_payload_decode(frame_data[16+12:], config)
+        depth = np.frombuffer(frame_bytes[0], 'uint16' if 0 == config[1] else 'uint8').reshape(240, 320)
+        ir    = np.frombuffer(frame_bytes[1], 'uint16' if 0 == config[3] else 'uint8').reshape(240, 320)
+        rgb = np.frombuffer(frame_bytes[3], 'uint8').reshape((480, 640, 3))
 
-    depth = np.frombuffer(frame_bytes[0], 'uint16' if 0 == config[1] else 'uint8').reshape(
-        240, 320) if frame_bytes[0] else None
-
-    ir = np.frombuffer(frame_bytes[1], 'uint16' if 0 == config[3] else 'uint8').reshape(
-        240, 320) if frame_bytes[1] else None
-
-    status = np.frombuffer(frame_bytes[2], 'uint16' if 0 == config[4] else 'uint8').reshape(
-        240, 320) if frame_bytes[2] else None
-
-    rgb = np.frombuffer(frame_bytes[3], 'uint8').reshape(
-        (480, 640, 3)) if frame_bytes[3] else None
-
-    ax1 = fig.add_subplot(221)
-    if not depth is None:
-        # center_dis = depth[240//2, 320//2]
-        # if 0 == config[1]:
-        #     print("%f mm" % (center_dis/4))
-        # else:
-        #     print("%f mm" % ((center_dis/5.1) ** 2))
-        # depth = depth.copy()
-
-        # l,r= 200,5000
-        # depth_f = ((depth.astype('float64') - l) * (65535 / (r - l)))
-        # depth_f[np.where(depth_f < 0)] = 0
-        # depth_f[np.where(depth_f > 65535)] = 65535
-
-        # depth = depth_f.astype(depth.dtype)
-
-        # depth[240//2, 320//2 - 5:320//2+5] = 0x00
-        # depth[240//2-5:240//2+5, 320//2] = 0x00
-        ax1.imshow(depth, cmap='jet_r')
-    ax2 = fig.add_subplot(222)
-    if not ir is None:
-        ax2.imshow(ir, cmap='gray')
-    ax3 = fig.add_subplot(223)
-    if not status is None:
-        ax3.imshow(status)
-    ax4 = fig.add_subplot(224)
-    if not rgb is None:
-        ax4.imshow(rgb)
-
+        return (depth, ir, rgb)
 
 if post_encode_config(frame_config_encode(1, 1, 255, 0, 2, 7, 1, 0, 0)):
-    # 打开交互模式
-    plt.ion()
-    figsize = (12, 12)
-    fig = plt.figure('2D frame', figsize=figsize)
-    while True:
-        p = get_frame_from_http()
-        show_frame(fig, p)
-        # 停顿时间
-        plt.pause(0.001)
-        # 清除当前画布
-        fig.clf()
+    with plt.ion():
+        fig = plt.figure('2D frame', figsize=(20, 12), clear=True)
+        while True:
+            depth, ir, rgb = get_img_from_a075v()
+            
+            ax1 = fig.add_subplot(221)
+            ax1.imshow(depth, cmap='jet_r')
 
-    plt.ioff()
+            ax2 = fig.add_subplot(222)
+            ax2.imshow(rgb)
+
+            ax3 = fig.add_subplot(223)
+            ax3.imshow(ir)
+
+            ax4 = fig.add_subplot(224)
+            ax4.imshow(np.random.randint(0, 256, size=(1080, 1920, 3), dtype=np.uint8), cmap='gray')
+            
+            # 停顿时间
+            plt.pause(0.1)
+            # 清除当前画布
+            fig.clear()
