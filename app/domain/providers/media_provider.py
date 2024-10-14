@@ -13,17 +13,19 @@ class MediaProvider():
 
     def __init__(self):
         self.durations = []
+        self.sensors   = []
 
-        self.sensors = [
+        self.sensor_factories = [
             # lambda: MockCam(), 
-            # lambda: PiCamera(), 
-            MaixSenseA075V()
+            lambda: PiCamera(), lambda: MaixSenseA075V()
         ]
 
         # img acquisition
-        def handling(thread_name: str, job_id: int, sensor):
+        def handling(thread_name: str, job_id: int, sensor_factory):
             
-            ds = Datasource()            
+            ds = Datasource()
+            sensor = None
+
             while True:
                 clock_watch = ClockWatch(key=thread_name)
                 
@@ -34,6 +36,10 @@ class MediaProvider():
 
                         run = Run(job_id=job_id, thing_id=thing_id, begin_at=datetime.now())
                         run_id = ds.insert_run(run=run)
+
+                        if sensor is None:
+                            sensor = sensor_factory()
+                            self.sensors.append(sensor)
 
                         timestamp = int(datetime.now().timestamp())                    
                         frames = clock_watch.watch(
@@ -81,10 +87,10 @@ class MediaProvider():
 
         self.threads = []
         i = 0
-        for sensor in self.sensors:
+        for factory in self.sensor_factories:
             # FIXME: set job_id
 
-            t = threading.Thread(target = handling, args=(f'Thread: {i}', 0, sensor,))
+            t = threading.Thread(target = handling, args=(f'Thread: {i}', 0, factory,))
             self.threads.append(t)
             
             t.start()
