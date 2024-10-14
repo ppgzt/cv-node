@@ -10,7 +10,10 @@ from app.domain.entities.media import *
 
 class MediaSensor:
 
-    def take_snapshot(self):
+    def init_session(self) -> None:
+        pass
+    
+    def take_snapshot(self) -> list:
         '''
             @return images, list
         '''
@@ -37,13 +40,14 @@ class MaixSenseA075V(MediaSensor):
     def __init__(self):
         self.HOST = '192.168.233.1'
         self.PORT = 80
-        self.ready = False
+        
+        self.__session = requests.Session()
+
+    def init_session(self):
+        print('init session')
+        self.__post_encode_config(self.__frame_config_encode(rgb_res=1))
 
     def take_snapshot(self):
-        if not self.ready:
-            self.__post_encode_config(self.__frame_config_encode(rgb_res=1))
-            self.ready = True
-
         raw = self.__get_frame_from_http()
         
         decode_config = self.__frame_config_decode(raw[16:16+12])
@@ -211,28 +215,31 @@ class MaixSenseA075V(MediaSensor):
     '''
     def __post_encode_config(self, config):
         try:
-            timeout = 5
-            r = requests.post(
-                url='http://{}:{}/set_cfg'.format(self.HOST, self.PORT), 
-                data=config,
-                timeout=timeout
-            )
-            if(r.status_code != requests.codes.ok):
-                raise MediaSensorInitializationException(msg=f'Error: status_code={r.status_code}')            
+            with self.__session as s:
+                timeout = 5
+                r = s.post(
+                    url='http://{}:{}/set_cfg'.format(self.HOST, self.PORT), 
+                    data=config,
+                    timeout=timeout
+                )
+                if(r.status_code != requests.codes.ok):
+                    raise MediaSensorInitializationException(msg=f'Error: status_code={r.status_code}')            
+        
         except requests.exceptions.Timeout as err:
             raise MediaSensorInitializationException(msg=f'Err: {err}; Timeout: {timeout}')
         except Exception as err:
             raise MediaSensorInitializationException()
 
     def __get_frame_from_http(self):
-        r = requests.get('http://{}:{}/getdeep'.format(self.HOST, self.PORT))
-        if(r.status_code == requests.codes.ok):
-            print('Get deep image')
-            deepimg = r.content
-            print('Length={}'.format(len(deepimg)))
-            (frameid, stamp_msec) = struct.unpack('<QQ', deepimg[0:8+8])
-            print((frameid, stamp_msec/1000))
-            return deepimg
+        with self.__session as s:
+            r = s.get('http://{}:{}/getdeep'.format(self.HOST, self.PORT), stream=False)
+            if(r.status_code == requests.codes.ok):
+                # print('Get deep image')
+                deepimg = r.content
+                # print('Length={}'.format(len(deepimg)))
+                (frameid, stamp_msec) = struct.unpack('<QQ', deepimg[0:8+8])
+                # print((frameid, stamp_msec/1000))
+                return deepimg
         
 class MockCam(MediaSensor):
 

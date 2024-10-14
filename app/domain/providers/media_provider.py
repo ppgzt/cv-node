@@ -1,4 +1,4 @@
-import threading, cv2, json
+import threading, cv2, json, time
 
 from datetime import datetime
 
@@ -14,18 +14,16 @@ class MediaProvider():
     def __init__(self):
         self.durations = []
 
-        self.factories = [
+        self.sensors = [
             # lambda: MockCam(), 
-            lambda: PiCamera(), 
-            # lambda: MaixSenseA075V()
+            # lambda: PiCamera(), 
+            MaixSenseA075V()
         ]
 
         # img acquisition
-        def handling(thread_name: str, job_id: int, sensor_factory):
+        def handling(thread_name: str, job_id: int, sensor):
             
-            ds = Datasource()
-            sensor = None
-            
+            ds = Datasource()            
             while True:
                 clock_watch = ClockWatch(key=thread_name)
                 
@@ -37,12 +35,7 @@ class MediaProvider():
                         run = Run(job_id=job_id, thing_id=thing_id, begin_at=datetime.now())
                         run_id = ds.insert_run(run=run)
 
-                        if sensor is None:
-                            sensor = sensor_factory()
-                             
-                        timestamp = int(datetime.now().timestamp())
-                        
-                        
+                        timestamp = int(datetime.now().timestamp())                    
                         frames = clock_watch.watch(
                             step_name='0-capture', method=lambda: sensor.take_snapshot())
                         for img in frames:
@@ -84,10 +77,10 @@ class MediaProvider():
 
         self.threads = []
         i = 0
-        for sensor_factory in self.factories:
+        for sensor in self.sensors:
             # FIXME: set job_id
 
-            t = threading.Thread(target = handling, args=(f'Thread: {i}', 0, sensor_factory,))
+            t = threading.Thread(target = handling, args=(f'Thread: {i}', 0, sensor,))
             self.threads.append(t)
             
             t.start()
@@ -98,6 +91,8 @@ class MediaProvider():
     def start(self, thing: dict, job_id: int):
         print(f'MediaProvider | starting job: {job_id}')
         self.durations = []
+        for s in self.sensors:
+            s.init_session()
 
         self.thing = thing
         self.event.set()
