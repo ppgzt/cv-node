@@ -38,13 +38,15 @@ class MediaProvider():
                         timestamp = int(datetime.now().timestamp())                    
                         frames = clock_watch.watch(
                             step_name='0-capture', method=lambda: sensor.take_snapshot())
+                        
+                        i = 1
                         for img in frames:
                             # TODO: Acredito que a imagem deva ser persistida sem ColorMap
                             #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)                            
                             
                             file_path = f'{run_id}_{thing_id}_{timestamp}_{img.type.name}.jpg'
                             clock_watch.watch(
-                                step_name='1-store_img', 
+                                step_name=f'1-store_img_{i}', 
                                 method= lambda: cv2.imwrite(f'cv-node-data/output/{file_path}', img.data)
                             )
 
@@ -53,8 +55,10 @@ class MediaProvider():
                             )
 
                             item_id = clock_watch.watch(
-                                step_name='2-store_db', method=lambda: ds.insert_item(item=item))
+                                step_name=f'2-store_db_{i}', method=lambda: ds.insert_item(item=item))
                             print(f'Item {item_id} inserted')
+                            
+                            i = i+1
 
                         run.final_at = datetime.now()
                         ds.update_run(run_id=run_id, run=run)
