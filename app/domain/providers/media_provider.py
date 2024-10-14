@@ -38,7 +38,8 @@ class MediaProvider():
                         run_id = ds.insert_run(run=run)
 
                         if sensor is None:
-                            sensor = sensor_factory()
+                            sensor = sensor_factory()                            
+                            sensor.init_session()
                             self.sensors.append(sensor)
 
                         timestamp = int(datetime.now().timestamp())                    
