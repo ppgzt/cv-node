@@ -22,6 +22,7 @@ class MediaSensor:
 class PiCamera(MediaSensor):
 
     def __init__(self):
+        self.name = 'PiCam_v1_3'
         self.cam = Camera()
         self.cam.still_size = (1920, 1080)
 
@@ -38,6 +39,7 @@ class PiCamera(MediaSensor):
 class MaixSenseA075V(MediaSensor):
 
     def __init__(self):
+        self.name = 'MaxSense - A075v'
         self.HOST = '192.168.233.1'
         self.PORT = 80
         
@@ -56,7 +58,7 @@ class MaixSenseA075V(MediaSensor):
         rgb_data = np.frombuffer(frame_bytes[3], 'uint8').reshape(
             (480, 640, 3) if decode_config[6] == 1 else (600, 800, 3)) if frame_bytes[3] else None
         rgb = Image(
-            image_pov=ImagePOV.SIDEWAY, 
+            image_pov=ImagePOV.TOP_DOWN, 
             image_type=ImageType.RGB, 
             image_res=ImageRes._640_480_3, 
             data=rgb_data
@@ -67,7 +69,7 @@ class MaixSenseA075V(MediaSensor):
             dtype='uint16' if 0 == decode_config[1] else 'uint8'
         ).reshape(240, 320) if frame_bytes[0] else None
         depth = Image(
-            image_pov=ImagePOV.SIDEWAY, 
+            image_pov=ImagePOV.TOP_DOWN, 
             image_type=ImageType.DEPTH, 
             image_res=ImageRes._320_240_1, 
             data=depth_data
@@ -78,7 +80,7 @@ class MaixSenseA075V(MediaSensor):
             dtype='uint16' if 0 == decode_config[3] else 'uint8'
         ).reshape(240, 320) if frame_bytes[1] else None
         ir = Image(
-            image_pov=ImagePOV.SIDEWAY, 
+            image_pov=ImagePOV.TOP_DOWN, 
             image_type=ImageType.IR, 
             image_res=ImageRes._320_240_1, 
             data=ir_data
@@ -89,7 +91,7 @@ class MaixSenseA075V(MediaSensor):
             dtype='uint16' if 0 == decode_config[4] else 'uint8'
         ).reshape(240, 320) if frame_bytes[2] else None
         status = Image(
-            image_pov=ImagePOV.SIDEWAY, 
+            image_pov=ImagePOV.TOP_DOWN, 
             image_type=ImageType.STATUS, 
             image_res=ImageRes._320_240_1, 
             data=status_data
@@ -242,6 +244,9 @@ class MaixSenseA075V(MediaSensor):
                 return deepimg
         
 class MockCam(MediaSensor):
+
+    def __init__(self):
+        self.name = 'MockCam'
 
     def take_snapshot(self):
         '''

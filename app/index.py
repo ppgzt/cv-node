@@ -1,4 +1,4 @@
-import threading, os
+import threading
 
 from datetime import datetime
 
@@ -31,17 +31,18 @@ def capture():
         job_id = Datasource().insert_job(job=Job(begin_at=datetime.now()))
 
         media_provider.start(thing=params['thing'], job_id=job_id)
-        return "Capturing media at 60FPS"
+        return "Capture ON"
     else:
         media_provider.stop()
-        return "Capture stoped"
+        return "Capture OFF"
 
 @app.route("/docs", methods=['GET'])
 def docs():
-    return render_template("docs.html", items=Datasource().list_items())
+    return render_template(
+        "docs.html", 
+        items=Datasource().list_items()
+    )
 
-@app.route("/reset", methods=['GET'])
-def reset():
-    now = datetime.now()
-    os.rename("cv-node-data/db/cvnode.json", f"cv-node-data/db/cvnode_{now.microsecond}.json")
-    return 'OK'
+@app.route("/ping", methods=['GET'])
+def ping():
+    return 'on'

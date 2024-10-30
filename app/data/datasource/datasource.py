@@ -1,5 +1,4 @@
 import sqlite3
-
 from app.domain.entities.basic import *
 
 class Datasource(object):
@@ -15,9 +14,21 @@ class Datasource(object):
 
         cur = self.__get_cursor()
         
-        cur.execute(f'CREATE TABLE IF NOT EXISTS {self.__job_table} (id ROWID, begin_at, final_at)')
-        cur.execute(f'CREATE TABLE IF NOT EXISTS {self.__run_table} (id ROWID, begin_at, final_at, thing_id, job_id)')
-        cur.execute(f'CREATE TABLE IF NOT EXISTS {self.__itm_table} (id ROWID, status, sensor, type, data, run_id)')
+        cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__job_table} (begin_at, final_at)''')
+        cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__run_table} (
+                    begin_at, 
+                    final_at, 
+                    sensor, 
+                    thing_id,
+                    thing_tag,
+                    job_id)''')
+        cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__itm_table} (
+                    status,
+                    type, 
+                    data,
+                    pov,
+                    res,
+                    run_id)''')
         
         self.__commit
     
@@ -31,44 +42,56 @@ class Datasource(object):
     
     def insert_job(self, job: Job) -> int:
         res = self.__get_cursor().execute(
-            f"INSERT INTO {self.__job_table} VALUES(null, ?, ?)", job.to_tuple()
+            f"INSERT INTO {self.__job_table} VALUES(?, ?)", job.to_tuple()
         )                
         self.__commit()
         return res.lastrowid
+    
+    def close_job(self, job_id: int, final_at: datetime) -> None:
+        self.__get_cursor().execute(
+            f"""UPDATE {self.__job_table} SET final_at = ? WHERE rowid = ?""", 
+            (final_at, job_id)
+        )                
+        self.__commit()
 
     def insert_run(self, run: Run) -> int:
         res = self.__get_cursor().execute(
-            f"INSERT INTO {self.__run_table} VALUES(null, ?, ?, ?, ?)", run.to_tuple()
+            f"INSERT INTO {self.__run_table} VALUES(?, ?, ?, ?, ?, ?)", 
+            run.to_tuple()
         )                
         self.__commit()
         return res.lastrowid
 
     def update_run(self, run_id: int, run: Run) -> None:
         values = list(run.to_tuple())
-        values.insert(0, run_id)
+        values.append(run_id)
 
         self.__get_cursor().execute(
             f"""UPDATE {self.__run_table} 
-                SET begin_at = ?, final_at = ?, thing_id = ?, job_id = ? 
-                WHERE id = ?
+                SET begin_at = ?, 
+                    final_at = ?, 
+                    sensor = ?, 
+                    thing_id = ?, 
+                    thing_tag = ?, 
+                    job_id = ? 
+                WHERE rowid = ?
             """, tuple(values)
         )                
         self.__commit()
 
     def insert_item(self, item: RunItem) -> int:
         res = self.__get_cursor().execute(
-            f"INSERT INTO {self.__itm_table} VALUES(null, ?, ?, ?, ?, ?)", item.to_tuple()
+            f"INSERT INTO {self.__itm_table} VALUES(?, ?, ?, ?, ?, ?)", 
+            item.to_tuple()
         )                
         self.__commit()
         return res.lastrowid       
 
     # List
 
-    def list_jobs(self):
-        return self.db.table(self.__job_table).all()
-
-    def list_runs(self):
-        return self.db.table(self.__run_table).all()
-
     def list_items(self):
-        return self.db.table(self.__itm_table).all()
+        res = self.__get_cursor().execute(
+            f'SELECT rowid, * FROM {self.__job_table}'
+        )
+        print(res.fetchall())
+        return []
