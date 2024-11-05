@@ -1,4 +1,4 @@
-import threading, cv2, json
+import threading, cv2, json, os
 
 from datetime import datetime
 
@@ -12,15 +12,13 @@ from app.domain.entities.helpers import ClockWatch
 class MediaProvider():
 
     def __init__(self):
-        self.__data_path = 'cv-node-data'
-
         self.durations = []
         self.sensors   = []
 
         self.sensor_factories = [
-            # lambda: MockCam(), 
+            lambda: MockCam(), 
             # lambda: PiCamera(), 
-            lambda: MaixSenseA075V()
+            # lambda: MaixSenseA075V()
         ]
 
         # img acquisition
@@ -55,14 +53,11 @@ class MediaProvider():
                         
                         i = 1
                         for img in frames:
-                            # TODO: Acredito que a imagem deva ser persistida sem ColorMap
-                            #_data = cv2.applyColorMap(img.data, cv2.COLORMAP_VIRIDIS)                            
-                            
-                            file_name = f'{thing_tag}_{run_id}_{timestamp}_{img.type.name}{img.res.name}.jpg'
+                            file_name = f'{thing_tag}_{run_id}_{timestamp}_{img.type.name}{img.res.name}.png'
                             clock_watch.watch(
                                 step_name=f'1-store_img_{i}', 
-                                method= lambda: cv2.imwrite(
-                                    f'{self.__data_path}/output/{file_name}', img.data
+                                method=lambda: cv2.imwrite(
+                                    f'{self.__get_job_folder}/{img.type.name}/{file_name}', img.data
                                 )
                             )
 
@@ -118,7 +113,10 @@ class MediaProvider():
 
         print('orchestration on')
 
-    def start(self, thing: dict, job_id: int):
+    def start(self, thing: dict):
+        job_id = Datasource().insert_job(job=Job(begin_at=datetime.now()))
+        self.__get_job_folder = f"cv-node-data/output/{job_id}"
+
         print(f'MediaProvider | starting job: {job_id}')
         self.job_id = job_id
         self.durations = []
@@ -127,16 +125,24 @@ class MediaProvider():
             s.init_session()
         
         self.thing = thing
+
+        if not os.path.exists(self.__get_job_folder):
+            os.makedirs(f"{self.__get_job_folder}/{ImageType.DEPTH.name}")
+            os.makedirs(f"{self.__get_job_folder}/{ImageType.RGB.name}")
+            os.makedirs(f"{self.__get_job_folder}/{ImageType.IR.name}") 
+            os.makedirs(f"{self.__get_job_folder}/{ImageType.STATUS.name}")
+            os.makedirs(f"{self.__get_job_folder}/watch")
+            
         self.event.set()
         
     def stop(self):
         print('step: stop')
 
-        self.obj = None
+        self.thing = None
         self.event.clear()
 
         try:
-            with open(f'{self.__data_path}/watch/durations.json', 'w') as f:
+            with open(f'{self.__get_job_folder}/watch/durations.json', 'w') as f:
                 file_data = []
                 for dur in self.durations:
                     data = {}

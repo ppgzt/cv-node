@@ -1,7 +1,5 @@
 import threading
 
-from datetime import datetime
-
 from app.domain.providers.media_provider import MediaProvider
 from app.domain.providers.agent_manager  import AgentManager
 
@@ -28,9 +26,7 @@ def capture():
     action = params['action']
 
     if action == "start":
-        job_id = Datasource().insert_job(job=Job(begin_at=datetime.now()))
-
-        media_provider.start(thing=params['thing'], job_id=job_id)
+        media_provider.start(thing=params['thing'])
         return "Capture ON"
     else:
         media_provider.stop()
