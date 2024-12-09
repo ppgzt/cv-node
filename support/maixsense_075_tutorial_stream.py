@@ -125,7 +125,7 @@ def show_frame(fig, frame_data: bytes):
         ax3.imshow(status)
     ax4 = fig.add_subplot(224)
     if not rgb is None:
-        ax4.imshow(rgb)tp
+        ax4.imshow(rgb)
 
 
 if post_encode_config(frame_config_encode(1, 1, 255, 0, 2, 7, 1, 0, 0)):

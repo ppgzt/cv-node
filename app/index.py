@@ -12,6 +12,9 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+# Create DB
+Datasource()
+
 # Start Agents
 threading.Thread(
     target = lambda agent_mgt: agent_mgt.run(), args=(AgentManager(),)
