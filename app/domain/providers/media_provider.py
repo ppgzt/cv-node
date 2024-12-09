@@ -16,9 +16,9 @@ class MediaProvider():
         self.sensors   = []
 
         self.sensor_factories = [
-            lambda: MockCam(), 
+            # lambda: MockCam(), 
             # lambda: PiCamera(), 
-            # lambda: MaixSenseA075V()
+            lambda: MaixSenseA075V()
         ]
 
         # img acquisition
@@ -57,7 +57,7 @@ class MediaProvider():
                             clock_watch.watch(
                                 step_name=f'1-store_img_{i}', 
                                 method=lambda: cv2.imwrite(
-                                    f'{self.__get_job_folder}/{img.type.name}/{file_name}', img.data
+                                    f'{self.__job_folder}/{img.type.name}/{file_name}', img.data
                                 )
                             )
 
@@ -115,7 +115,7 @@ class MediaProvider():
 
     def start(self, thing: dict):
         job_id = Datasource().insert_job(job=Job(begin_at=datetime.now()))
-        self.__get_job_folder = f"cv-node-data/output/{job_id}"
+        self.__job_folder = f"cv-node-data/output/{job_id}"
 
         print(f'MediaProvider | starting job: {job_id}')
         self.job_id = job_id
@@ -126,12 +126,12 @@ class MediaProvider():
         
         self.thing = thing
 
-        if not os.path.exists(self.__get_job_folder):
-            os.makedirs(f"{self.__get_job_folder}/{ImageType.DEPTH.name}")
-            os.makedirs(f"{self.__get_job_folder}/{ImageType.RGB.name}")
-            os.makedirs(f"{self.__get_job_folder}/{ImageType.IR.name}") 
-            os.makedirs(f"{self.__get_job_folder}/{ImageType.STATUS.name}")
-            os.makedirs(f"{self.__get_job_folder}/watch")
+        if not os.path.exists(self.__job_folder):
+            os.makedirs(f"{self.__job_folder}/{ImageType.DEPTH.name}")
+            os.makedirs(f"{self.__job_folder}/{ImageType.RGB.name}")
+            os.makedirs(f"{self.__job_folder}/{ImageType.IR.name}") 
+            os.makedirs(f"{self.__job_folder}/{ImageType.STATUS.name}")
+            os.makedirs(f"{self.__job_folder}/watch")
             
         self.event.set()
         
@@ -142,7 +142,7 @@ class MediaProvider():
         self.event.clear()
 
         try:
-            with open(f'{self.__get_job_folder}/watch/durations.json', 'w') as f:
+            with open(f'{self.__job_folder}/watch/durations.json', 'w') as f:
                 file_data = []
                 for dur in self.durations:
                     data = {}
