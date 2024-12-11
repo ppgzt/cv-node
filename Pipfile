@@ -11,6 +11,7 @@ opencv-python = "*"
 flask-cors = "*"
 psutil = "*"
 python-dotenv = "*"
+firebase-admin = "*"
 
 [dev-packages]
 

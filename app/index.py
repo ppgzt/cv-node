@@ -1,10 +1,12 @@
 import threading
 
 from app.domain.providers.media_provider import MediaProvider
+from app.domain.providers.synch_provider import SynchProvider
 from app.domain.providers.agent_manager  import AgentManager
 
 from app.domain.entities.basic import *
 from app.data.datasource.datasource import Datasource
+from app.data.datasource.firebase_datasource import FirebaseDatasource
 
 from flask import Flask, request, render_template
 from flask_cors import CORS
@@ -14,11 +16,15 @@ CORS(app)
 
 # Create DB
 Datasource()
+FirebaseDatasource()
 
 # Start Agents
 threading.Thread(
     target = lambda agent_mgt: agent_mgt.run(), args=(AgentManager(),)
 ).start()
+
+# Instance SynchProvider
+synch_provider = SynchProvider()
 
 # Start MediaProvider
 media_provider = MediaProvider()
@@ -45,3 +51,8 @@ def docs():
 @app.route("/ping", methods=['GET'])
 def ping():
     return 'on'
+
+@app.route("/synch", methods=['GET'])
+def synch():
+    synch_provider.start()
+    return 'synch on'
