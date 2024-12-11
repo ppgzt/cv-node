@@ -5,19 +5,18 @@
 <table class="centered thick-border">
 	<tr>
 		<th>Status</th>
-		<th>Run</th>
-        <th>Sensor</th>
         <th>Type</th>
-        <th>Data</th>
+        <th>File Path</th>
+		<th>Run ID</th>
 	</tr>
 	{% for item in items %}
     
-        <tr>
-            {% for k, v in item.items() %}
-                <!-- <td>{{ k }}</td> -->
-                <td>{{ v }}</td>
-            {% endfor %}
-        </tr>		
+	<tr>
+		<td>{{ item.status.name }}</td>
+		<td>{{ item.type.name 	}}</td>
+		<td>{{ item.file_path 	}}</td>
+		<td>{{ item.run_id 		}}</td>
+	</tr>		
 
     {% endfor %}    
 </table

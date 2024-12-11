@@ -5,6 +5,8 @@ from app.domain.entities.media import Image
 class Job:
 
     def __init__(self, begin_at: datetime, final_at: datetime = None):
+        self.id = None
+        
         self.begin_at = begin_at
         self.final_at = final_at
 
@@ -14,11 +16,9 @@ class Job:
             self.final_at.isoformat() if self.final_at is not None else None
         )
     
-    def to_dict(self):
-        return {
-            'begin_at': self.begin_at.isoformat(),
-            'final_at': self.final_at.isoformat() if self.final_at is not None else None
-        }
+class RunStatus(Enum):
+    CREATED = 0
+    SYNCED  = 1
 
 class Run:
 
@@ -29,6 +29,8 @@ class Run:
                  thing_tag: str, 
                  job_id: int, 
                  final_at: datetime = None):
+        self.id = None
+
         self.begin_at = begin_at
         self.final_at = final_at
         self.sensor = sensor
@@ -47,6 +49,30 @@ class Run:
             self.thing_tag,
             self.job_id
         )
+    
+    @staticmethod
+    def from_tuple(data: tuple):
+        obj = Run(
+            begin_at = datetime.fromisoformat(data[1]),
+            final_at = datetime.fromisoformat(data[2]) if data[2] is not None else None,
+            sensor   = data[3],
+            thing_id = data[4],
+            thing_tag= data[5],
+            job_id   = data[6]
+        )
+        obj.id = data[0]
+        return obj
+    
+    def __repr__(self):
+        return f'''
+            id:{self.id}
+            begin_at:{self.begin_at}
+            final_at:{self.final_at}
+            sensor: {self.sensor}
+            thing_id: {self.thing_id}
+            thing_tag: {self.thing_tag}
+            job_id: {self.job_id}
+        '''
         
 class RunItemType(Enum):
     IMAGE = 0
@@ -59,10 +85,12 @@ class RunItemStatus(Enum):
 class RunItem:
 
     def __init__(self, status: RunItemStatus, type: RunItemType, data: Image, file_path: dict, run_id: int):
+        self.id = None
+
         self.status = status
         self.type   = type
         self.data   = data
-        self.file_path   = file_path
+        self.file_path = file_path
         self.run_id = run_id
 
     def to_tuple(self):
@@ -74,3 +102,24 @@ class RunItem:
             self.file_path, 
             self.run_id
         )
+    
+    @staticmethod
+    def from_tuple(data: tuple):
+        item = RunItem(
+            status = RunItemStatus[data[1]],
+            type   = RunItemType[data[2]],
+            # FIXME
+            data=None,
+            file_path = data[5],
+            run_id = data[6]
+        )
+        item.id = data[0]
+        return item
+    
+    def __repr__(self):
+        return f'''
+            status:{self.status.name} 
+            type: {self.type.name} 
+            file_path: {self.file_path} 
+            run_id: {self.run_id}
+        '''

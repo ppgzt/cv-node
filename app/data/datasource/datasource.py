@@ -1,4 +1,6 @@
 import sqlite3
+
+from datetime import datetime
 from app.domain.entities.basic import *
 
 class Datasource(object):
@@ -25,18 +27,18 @@ class Datasource(object):
         cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__itm_table} (
                     status,
                     type, 
-                    data,
                     pov,
                     res,
+                    file_path,
                     run_id)''')
         
-        self.__commit
+        self.__commit()
     
     def __get_cursor(self):
         return self.con.cursor()
     
     def __commit(self):
-        self.con.commit() 
+        self.con.commit()
     
     # Insert | Update
     
@@ -91,7 +93,37 @@ class Datasource(object):
 
     def list_items(self):
         res = self.__get_cursor().execute(
-            f'SELECT rowid, * FROM {self.__job_table}'
+            f'SELECT rowid, * FROM {self.__itm_table}'
         )
-        print(res.fetchall())
-        return []
+        items = []
+        for row in res.fetchall():
+            items.append(RunItem.from_tuple(row))
+
+        return items
+
+    # Filter
+    
+    def filter_runs_by_status(self, status: RunStatus):
+        # FIXME
+        res = self.__get_cursor().execute(
+            f'SELECT rowid, * FROM {self.__run_table}'
+        )
+        
+        runs = []
+        for row in res.fetchall():
+            runs.append(Run.from_tuple(row))
+
+        return runs
+    
+    def filter_items_by_run_id(self, run_id: int):
+        res = self.__get_cursor().execute(
+            f'''SELECT rowid, * 
+                FROM {self.__itm_table}
+                WHERE run_id = ?
+            ''', (run_id,)
+        )
+        items = []
+        for row in res.fetchall():
+            items.append(RunItem.from_tuple(row))
+
+        return items
