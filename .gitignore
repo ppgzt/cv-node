@@ -3,6 +3,7 @@ cv-node-data
 watch
 analytics/data
 analytics/exps
+fb-credentials.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
