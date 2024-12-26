@@ -30,7 +30,7 @@ class SynchProvider():
                         try:
                             fireb_ds.add_run_to_thing(
                                 project_id="ALue3cViohd03AlkOc5E", 
-                                collect_id="dZFVs4MkQa1py9r9Nguj", 
+                                collect_id="OXlA4HTt69EhKln64Cjz", 
                                 run=run,
                                 items=items
                             )
