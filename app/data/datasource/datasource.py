@@ -91,6 +91,16 @@ class Datasource(object):
 
     # List
 
+    def list_jobs(self):
+        res = self.__get_cursor().execute(
+            f'SELECT rowid, * FROM {self.__job_table}'
+        )
+        jobs = []
+        for row in res.fetchall():
+            jobs.append(Job.from_tuple(row))
+
+        return jobs
+
     def list_items(self):
         res = self.__get_cursor().execute(
             f'SELECT rowid, * FROM {self.__itm_table}'
@@ -106,7 +116,7 @@ class Datasource(object):
     def filter_runs_by_status(self, status: RunStatus):
         # FIXME
         res = self.__get_cursor().execute(
-            f'SELECT rowid, * FROM {self.__run_table}'
+            f'SELECT rowid, * FROM {self.__run_table} WHERE rowid > 6800'
         )
         
         runs = []

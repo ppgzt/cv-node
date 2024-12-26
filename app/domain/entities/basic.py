@@ -16,6 +16,15 @@ class Job:
             self.final_at.isoformat() if self.final_at is not None else None
         )
     
+    @staticmethod
+    def from_tuple(data: tuple):
+        job = Job(
+            begin_at = datetime.fromisoformat(data[1]),
+            final_at = datetime.fromisoformat(data[2]) if data[2] is not None else None,
+        )
+        job.id = data[0]
+        return job
+    
 class RunStatus(Enum):
     CREATED = 0
     SYNCED  = 1
