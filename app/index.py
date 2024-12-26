@@ -1,7 +1,8 @@
 import threading
 
 from app.domain.providers.media_provider import MediaProvider
-from app.domain.providers.synch_provider import SynchProvider
+from app.domain.providers.data_sync_provider import DataSyncProvider
+from app.domain.providers.image_sync_provider import ImageSyncProvider
 from app.domain.providers.agent_manager  import AgentManager
 
 from app.domain.entities.basic import *
@@ -24,7 +25,8 @@ threading.Thread(
 ).start()
 
 # Instance SynchProvider
-synch_provider = SynchProvider()
+data_sync_provider = DataSyncProvider()
+image_sync_provider = ImageSyncProvider()
 
 # Start MediaProvider
 media_provider = MediaProvider()
@@ -52,7 +54,12 @@ def docs():
 def ping():
     return 'on'
 
-@app.route("/synch", methods=['GET'])
-def synch():
-    synch_provider.start()
+@app.route("/data-sync", methods=['GET'])
+def data_sync():
+    data_sync_provider.start()
+    return 'synch on'
+
+@app.route("/image-sync", methods=['GET'])
+def image_sync():
+    image_sync_provider.start()
     return 'synch on'

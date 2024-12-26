@@ -12,6 +12,7 @@ flask-cors = "*"
 psutil = "*"
 python-dotenv = "*"
 firebase-admin = "*"
+imagekitio = "*"
 
 [dev-packages]
 

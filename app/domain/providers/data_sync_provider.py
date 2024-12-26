@@ -6,7 +6,7 @@ from app.data.datasource.datasource import Datasource
 from app.data.datasource.firebase_datasource import FirebaseDatasource
 from app.domain.failures.exceptions import ThingNotFoundToSyncException
 
-class SynchProvider():
+class DataSyncProvider():
 
     def __init__(self):
         self.event = threading.Event()
