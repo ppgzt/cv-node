@@ -16,13 +16,17 @@ class Datasource(object):
 
         cur = self.__get_cursor()
         
-        cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__job_table} (begin_at, final_at)''')
+        cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__job_table} (
+                    begin_at, 
+                    project_id,
+                    collect_id,
+                    thing_id,
+                    thing_tag,
+                    final_at)''')
         cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__run_table} (
                     begin_at, 
                     final_at, 
                     sensor, 
-                    thing_id,
-                    thing_tag,
                     job_id)''')
         cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__itm_table} (
                     status,
@@ -44,7 +48,7 @@ class Datasource(object):
     
     def insert_job(self, job: Job) -> int:
         res = self.__get_cursor().execute(
-            f"INSERT INTO {self.__job_table} VALUES(?, ?)", job.to_tuple()
+            f"INSERT INTO {self.__job_table} VALUES(?, ?, ?, ?, ?, ?)", job.to_tuple()
         )                
         self.__commit()
         return res.lastrowid
@@ -58,7 +62,7 @@ class Datasource(object):
 
     def insert_run(self, run: Run) -> int:
         res = self.__get_cursor().execute(
-            f"INSERT INTO {self.__run_table} VALUES(?, ?, ?, ?, ?, ?)", 
+            f"INSERT INTO {self.__run_table} VALUES(?, ?, ?, ?)", 
             run.to_tuple()
         )                
         self.__commit()
@@ -73,8 +77,6 @@ class Datasource(object):
                 SET begin_at = ?, 
                     final_at = ?, 
                     sensor = ?, 
-                    thing_id = ?, 
-                    thing_tag = ?, 
                     job_id = ? 
                 WHERE rowid = ?
             """, tuple(values)

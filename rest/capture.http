@@ -3,9 +3,11 @@ Content-Type: application/json
 
 {
     "action":"start",
-    "thing": {
-        "id":"XY00-9",
-        "tag":"XY00"
+    "data": {
+        "project_id":"PR-9",
+        "collect_id":"CL-9",
+        "thing_id":"XY00-9",
+        "thing_tag":"TG-00"
     }
 }
 

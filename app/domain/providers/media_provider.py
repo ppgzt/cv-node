@@ -38,22 +38,17 @@ class MediaProvider():
                             sensor.init_session()
                             self.sensors.append(sensor)
                         
-                        thing_tag = self.thing["tag"]
-                        run = Run(
-                            begin_at=datetime.now(),
-                            sensor=sensor.name,
-                            thing_id=self.thing['id'],
-                            thing_tag=thing_tag,
-                            job_id=self.job_id)
+                        run = Run(begin_at=datetime.now(), sensor=sensor.name, job_id=self.job_id)
                         run_id = ds.insert_run(run=run)
 
                         timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
                         frames = clock_watch.watch(
-                            step_name='0-capture', method=lambda: sensor.take_snapshot())
+                            step_name='0-capture', method=lambda: sensor.take_snapshot()
+                        )
                         
                         i = 1
                         for img in frames:
-                            file_name = f'{thing_tag}_{run_id}_{timestamp}_{img.type.name}{img.res.name}.png'
+                            file_name = f'{self.thing_tag}_{run_id}_{timestamp}_{img.type.name}{img.res.name}.png'
                             clock_watch.watch(
                                 step_name=f'1-store_img_{i}', 
                                 method=lambda: cv2.imwrite(
@@ -64,7 +59,8 @@ class MediaProvider():
                             item = RunItem(
                                 status=RunItemStatus.STAGED, 
                                 type=RunItemType.IMAGE,
-                                data=img,
+                                pov=img.pov.name,
+                                res=img.res.name,
                                 file_path=file_name, 
                                 run_id=run_id
                             )
@@ -89,18 +85,9 @@ class MediaProvider():
                     
                 else:
                     self.event.wait()
-                    if self.job_id is not None:
-                        try:
-                            ds.close_job(job_id=self.job_id, final_at=datetime.now())
-                        except:
-                            # TODO
-                            pass
-                        self.job_id = None
-
                     print(f'waiting')
         
         self.event = threading.Event()
-        self.thing = None
 
         self.threads = []
         i = 0
@@ -113,8 +100,16 @@ class MediaProvider():
 
         print('orchestration on')
 
-    def start(self, thing: dict):
-        job_id = Datasource().insert_job(job=Job(begin_at=datetime.now()))
+    def start(self, data: dict):
+        self.thing_tag = data["thing_tag"]
+        
+        job_id = Datasource().insert_job(job=Job(
+            begin_at=datetime.now(),
+            project_id=data['project_id'],
+            collect_id=data['collect_id'],
+            thing_id=data['thing_id'],
+            thing_tag=data['thing_tag'],
+            ))
         self.__job_folder = f"cv-node-data/output/{job_id}"
 
         print(f'MediaProvider | starting job: {job_id}')
@@ -124,8 +119,6 @@ class MediaProvider():
         for s in self.sensors:
             s.init_session()
         
-        self.thing = thing
-
         if not os.path.exists(self.__job_folder):
             os.makedirs(f"{self.__job_folder}/{ImageType.DEPTH.name}")
             os.makedirs(f"{self.__job_folder}/{ImageType.RGB.name}")
@@ -138,10 +131,14 @@ class MediaProvider():
     def stop(self):
         print('step: stop')
 
-        self.thing = None
+        self.thing_tag = None
         self.event.clear()
 
         try:
+            if self.job_id is not None:
+                Datasource().close_job(job_id=self.job_id, final_at=datetime.now())
+                self.job_id = None
+
             with open(f'{self.__job_folder}/watch/durations.json', 'w') as f:
                 file_data = []
                 for dur in self.durations:

@@ -37,7 +37,7 @@ def capture():
     action = params['action']
 
     if action == "start":
-        media_provider.start(thing=params['thing'])
+        media_provider.start(data=params['data'])
         return "Capture ON"
     else:
         media_provider.stop()
