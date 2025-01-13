@@ -6,7 +6,7 @@ from firebase_admin import firestore
 from threading import Lock
 
 from app.domain.failures.exceptions import ThingNotFoundToSyncException
-from app.domain.entities.basic import Run
+from app.domain.entities.views import *
 
 class SingletonMeta(type):
     """
@@ -49,40 +49,35 @@ class FirebaseDatasource(metaclass=SingletonMeta):
         firebase_admin.initialize_app(credentials.Certificate('fb-credentials.json'))
         self.__db = firestore.client()
 
-    def add_run_to_thing(self, project_id: str, collect_id: str, run: Run, items: list):
+    def add_run_to_thing(self, run_row: RunRow, items: list):
         doc_ref = self.__db.collection(
             "projects"
         ).document(
-            project_id
+            run_row.project_id
         ).collection(
             "collects"
         ).document(
-            collect_id
+            run_row.collect_id
         ).collection(
             "data"
         ).document(
-            run.thing_id
+            run_row.thing_id
         )
 
         doc = doc_ref.get()
         if not doc.exists:
-            raise ThingNotFoundToSyncException(
-                thing_id=run.thing_id, 
-                thing_tag=run.thing_tag
-            )
+            raise ThingNotFoundToSyncException(thing_id=run_row.thing_id)
         
         run_dict = {
-            'begin_at':run.begin_at.isoformat(),
-            'final_at':run.final_at.isoformat() if run.final_at is not None else None,
-            'sensor'  :run.sensor
+            'begin_at':run_row.begin_at.isoformat(),
+            'final_at':run_row.final_at.isoformat() if run_row.final_at is not None else None,
+            'sensor'  :run_row.sensor
         }
         
         for item in items:
-            # FIXME
-            key = re.search('RGB|DEPTH|IR|STATUS', item.file_path).group()
-            run_dict[key.lower()] = item.file_path
+            run_dict[item.type.name.lower()] = item.file_path
 
-        _uuid = uuid.uuid3(uuid.NAMESPACE_DNS, f"{run.id}")
+        _uuid = uuid.uuid3(uuid.NAMESPACE_DNS, f"{run_row.run_id}")
         doc_ref.collection(
             "images"
         ).document(

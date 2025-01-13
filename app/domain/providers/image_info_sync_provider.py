@@ -18,32 +18,26 @@ class ImageInfoSyncProvider():
 
             while True:
                 if self.event.is_set():
-                    runs = local_ds.filter_runs_by_status(RunStatus.CREATED)
-                    i = 0
+                    runs = local_ds.filter_runs_by_status_as_view(RunStatus.CREATED)
+                    i = 1
 
-                    for run in runs:
+                    for run_row in runs:
                         print(f"Run {i}/{len(runs)}")
+                        print(run_row)
 
-                        items = local_ds.filter_items_by_run_id(run_id=run.id)
-                      
-                        # FIXME ~ project_id e collect_id devem ser recuperadas do Job
+                        items = local_ds.filter_items_by_run_id(run_id=run_row.run_id)
                         try:
-                            fireb_ds.add_run_to_thing(
-                                project_id="ALue3cViohd03AlkOc5E", 
-                                collect_id="OXlA4HTt69EhKln64Cjz", 
-                                run=run,
-                                items=items
-                            )
+                            fireb_ds.add_run_to_thing(run_row=run_row,items=items)
 
                         except ThingNotFoundToSyncException as err:
                             print(err.msg)
                         
                         except Exception as err:
-                            print(f'{run.id} - Unexpected {err=}, {type(err)=}')
+                            print(f'{run_row.id} - Unexpected {err=}, {type(err)=}')
                         
-                        # TODO: update status do Run and remove break
+                        local_ds.update_run_status(run_row.run_id, RunStatus.SYNCED)
                         i+=1
-                        break
+                    
                     self.event.clear()
                 else:
                     self.event.wait()
@@ -53,4 +47,4 @@ class ImageInfoSyncProvider():
 
     def start(self):
         self.event.set()
-        print('sync on')            
+        print('sync on')

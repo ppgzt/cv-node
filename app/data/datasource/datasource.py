@@ -2,6 +2,7 @@ import sqlite3
 
 from datetime import datetime
 from app.domain.entities.basic import *
+from app.domain.entities.views import *
 
 class Datasource(object):
 
@@ -85,6 +86,16 @@ class Datasource(object):
         )                
         self.__commit()
 
+    def update_run_status(self, run_id: int, status: RunStatus) -> None:
+        print((run_id, status))
+        self.__get_cursor().execute(
+            f"""UPDATE {self.__run_table} 
+                SET status  = ?
+                WHERE rowid = ?
+            """, (status.name, run_id)
+        )                
+        self.__commit()
+
     def insert_item(self, item: RunItem) -> int:
         res = self.__get_cursor().execute(
             f"INSERT INTO {self.__itm_table} VALUES(?, ?, ?, ?, ?, ?)", 
@@ -117,18 +128,7 @@ class Datasource(object):
 
     # Filter
     
-    def filter_runs_by_status(self, status: RunStatus):
-        # FIXME
-        res = self.__get_cursor().execute(
-            f'SELECT rowid, * FROM {self.__run_table} WHERE rowid > 6800'
-        )
-        
-        runs = []
-        for row in res.fetchall():
-            runs.append(Run.from_tuple(row))
-
-        return runs
-    
+   
     def filter_items_by_run_id(self, run_id: int):
         res = self.__get_cursor().execute(
             f'''SELECT rowid, * 
@@ -141,3 +141,29 @@ class Datasource(object):
             items.append(RunItem.from_tuple(row))
 
         return items
+    
+    # As View
+
+    def filter_runs_by_status_as_view(self, status: RunStatus):
+        res = self.__get_cursor().execute(
+            f'''
+            SELECT job.rowid, 
+                run.rowid, 
+                job.project_id, 
+                job.collect_id, 
+                job.thing_id, 
+                run.sensor, 
+                run.begin_at, 
+                run.final_at
+            FROM {self.__run_table} as run
+            JOIN {self.__job_table} as job on run.job_id = job.rowid
+            WHERE run.status = ?
+            ''',
+            (status.name,)
+        )
+        
+        runs = []
+        for row in res.fetchall():
+            runs.append(RunRow.from_tuple(row))
+
+        return runs
