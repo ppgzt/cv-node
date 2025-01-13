@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from app.domain.entities.media import Image
+
+from app.domain.entities.media import *
 
 class Job:
 
@@ -105,9 +106,6 @@ class Run:
             final_at:{self.final_at}
         '''
         
-class RunItemType(Enum):
-    IMAGE = 0
-
 class RunItemStatus(Enum):
     STAGED    = 0
     COMMITTED = 1
@@ -115,7 +113,13 @@ class RunItemStatus(Enum):
 
 class RunItem:
 
-    def __init__(self, status: RunItemStatus, type: RunItemType, pov: str, res: str, file_path: dict, run_id: int):
+    def __init__(self, 
+                 status: RunItemStatus, 
+                 type: ImageType, 
+                 pov: ImagePOV, 
+                 res: ImageRes, 
+                 file_path: dict, 
+                 run_id: int):
         self.id = None
 
         self.status = status
@@ -128,9 +132,9 @@ class RunItem:
     def to_tuple(self):
         return (
             self.status.name,
-            self.type.name, 
-            self.pov,
-            self.res,
+            self.type.name,
+            self.pov.name,
+            self.res.name,
             self.file_path, 
             self.run_id
         )
@@ -139,9 +143,9 @@ class RunItem:
     def from_tuple(data: tuple):
         item = RunItem(
             status = RunItemStatus[data[1]],
-            type   = RunItemType[data[2]],
-            pov = data[3],
-            res = data[4],
+            type   = ImageType[data[2]],
+            pov = ImagePOV[data[3]],
+            res = ImageRes[data[4]],
             file_path = data[5],
             run_id = data[6]
         )
@@ -152,8 +156,8 @@ class RunItem:
         return f'''
             status:{self.status.name} 
             type: {self.type.name} 
-            pov: {self.pov}
-            res: {self.res}
+            pov: {self.pov.name}
+            res: {self.res.name}
             file_path: {self.file_path} 
             run_id: {self.run_id}
         '''

@@ -59,9 +59,9 @@ class MediaProvider():
 
                             item = RunItem(
                                 status=RunItemStatus.STAGED, 
-                                type=RunItemType.IMAGE,
-                                pov=img.pov.name,
-                                res=img.res.name,
+                                type=img.type,
+                                pov=img.pov,
+                                res=img.res,
                                 file_path=file_name, 
                                 run_id=run_id
                             )
