@@ -131,8 +131,8 @@ class MediaProvider():
     def stop(self):
         print('step: stop')
 
-        self.thing_tag = None
         self.event.clear()
+        self.thing_tag = None
 
         try:
             if self.job_id is not None:
