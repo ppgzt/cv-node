@@ -1,8 +1,8 @@
 import threading
 
 from app.domain.providers.media_provider import MediaProvider
-from app.domain.providers.data_sync_provider import DataSyncProvider
-from app.domain.providers.image_sync_provider import ImageSyncProvider
+from app.domain.providers.image_info_sync_provider import ImageInfoSyncProvider
+from app.domain.providers.image_data_sync_provider import ImageDataSyncProvider
 from app.domain.providers.agent_manager  import AgentManager
 
 from app.domain.entities.basic import *
@@ -16,8 +16,8 @@ app = Flask(__name__)
 CORS(app)
 
 # Create DB
-Datasource()
 FirebaseDatasource()
+Datasource()
 
 # Start Agents
 threading.Thread(
@@ -25,8 +25,8 @@ threading.Thread(
 ).start()
 
 # Instance SynchProvider
-data_sync_provider = DataSyncProvider()
-image_sync_provider = ImageSyncProvider()
+img_info_sync_provider = ImageInfoSyncProvider()
+img_data_sync_provider = ImageDataSyncProvider()
 
 # Start MediaProvider
 media_provider = MediaProvider()
@@ -54,12 +54,12 @@ def docs():
 def ping():
     return 'on'
 
-@app.route("/data-sync", methods=['GET'])
+@app.route("/img-info-sync", methods=['GET'])
 def data_sync():
-    data_sync_provider.start()
+    img_info_sync_provider.start()
     return 'synch on'
 
-@app.route("/image-sync", methods=['GET'])
+@app.route("/img-data-sync", methods=['GET'])
 def image_sync():
-    image_sync_provider.start()
+    img_data_sync_provider.start()
     return 'synch on'

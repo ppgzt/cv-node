@@ -6,7 +6,7 @@ from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
 from app.domain.entities.basic import *
 from app.data.datasource.datasource import Datasource
 
-class ImageSyncProvider():
+class ImageDataSyncProvider():
 
     def __init__(self):
         self.event = threading.Event()
