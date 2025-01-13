@@ -62,31 +62,35 @@ class Run:
 
     def __init__(self, 
                  begin_at: datetime, 
+                 status: RunStatus,
                  sensor: str, 
                  job_id: int, 
                  final_at: datetime = None):
         self.id = None
 
         self.begin_at = begin_at
-        self.final_at = final_at
+        self.status = status
         self.sensor = sensor
         self.job_id = job_id
+        self.final_at = final_at
 
     def to_tuple(self):
         return (
             self.begin_at.isoformat(), 
-            self.final_at.isoformat() if self.final_at is not None else None,
+            self.status.name,
             self.sensor,
-            self.job_id
+            self.job_id,
+            self.final_at.isoformat() if self.final_at is not None else None,
         )
     
     @staticmethod
     def from_tuple(data: tuple):
         obj = Run(
             begin_at = datetime.fromisoformat(data[1]),
-            final_at = datetime.fromisoformat(data[2]) if data[2] is not None else None,
+            status=RunStatus[data[2]],
             sensor   = data[3],
-            job_id   = data[4]
+            job_id   = data[4],
+            final_at = datetime.fromisoformat(data[5]) if data[5] is not None else None,
         )
         obj.id = data[0]
         return obj
@@ -95,9 +99,10 @@ class Run:
         return f'''
             id:{self.id}
             begin_at:{self.begin_at}
-            final_at:{self.final_at}
+            status:{self.status}
             sensor: {self.sensor}
             job_id: {self.job_id}
+            final_at:{self.final_at}
         '''
         
 class RunItemType(Enum):

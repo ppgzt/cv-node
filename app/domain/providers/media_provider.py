@@ -38,7 +38,8 @@ class MediaProvider():
                             sensor.init_session()
                             self.sensors.append(sensor)
                         
-                        run = Run(begin_at=datetime.now(), sensor=sensor.name, job_id=self.job_id)
+                        run = Run(
+                            begin_at=datetime.now(), status=RunStatus.CREATED, sensor=sensor.name, job_id=self.job_id)
                         run_id = ds.insert_run(run=run)
 
                         timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')
@@ -132,8 +133,6 @@ class MediaProvider():
         print('step: stop')
 
         self.event.clear()
-        self.thing_tag = None
-
         try:
             if self.job_id is not None:
                 Datasource().close_job(job_id=self.job_id, final_at=datetime.now())

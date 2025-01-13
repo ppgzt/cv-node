@@ -24,10 +24,11 @@ class Datasource(object):
                     thing_tag,
                     final_at)''')
         cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__run_table} (
-                    begin_at, 
-                    final_at, 
+                    begin_at,
+                    status, 
                     sensor, 
-                    job_id)''')
+                    job_id,
+                    final_at)''')
         cur.execute(f'''CREATE TABLE IF NOT EXISTS {self.__itm_table} (
                     status,
                     type, 
@@ -62,7 +63,7 @@ class Datasource(object):
 
     def insert_run(self, run: Run) -> int:
         res = self.__get_cursor().execute(
-            f"INSERT INTO {self.__run_table} VALUES(?, ?, ?, ?)", 
+            f"INSERT INTO {self.__run_table} VALUES(?, ?, ?, ?, ?)", 
             run.to_tuple()
         )                
         self.__commit()
@@ -75,9 +76,10 @@ class Datasource(object):
         self.__get_cursor().execute(
             f"""UPDATE {self.__run_table} 
                 SET begin_at = ?, 
-                    final_at = ?, 
+                    status = ?,
                     sensor = ?, 
-                    job_id = ? 
+                    job_id = ?, 
+                    final_at = ? 
                 WHERE rowid = ?
             """, tuple(values)
         )                
