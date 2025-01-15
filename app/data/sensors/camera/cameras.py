@@ -47,7 +47,7 @@ class MaixSenseA075V(MediaSensor):
 
     def init_session(self):
         print('init session')
-        self.__post_encode_config(self.__frame_config_encode(rgb_res=1))
+        self.__post_encode_config(self.__frame_config_encode(deep_mode=0, rgb_res=1))
 
     def take_snapshot(self):
         raw = self.__get_frame_from_http()
